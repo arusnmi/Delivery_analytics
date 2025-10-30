@@ -21,7 +21,7 @@ from datetime import datetime
 
 st.set_page_config(layout="wide", page_title="Last-mile Delivery Dashboard")
 
-DEFAULT_CSV = "/mnt/data/no_na_Last_mile_Delivery_Data.csv"
+DEFAULT_CSV = "delay_based_features.csv"
 
 @st.cache_data
 def load_data(path=None, uploaded_file=None):
