@@ -1,56 +1,44 @@
 import pandas as pd
+import numpy as np
 
-# Load the data
+# Load the dataset
 df = pd.read_csv("no_na_Last_mile_Delivery_Data.csv")
 
-# Combine Order_Date and Order_Time into datetime
-df["Order_Datetime"] = pd.to_datetime(df["Order_Date"] + " " + df["Order_Time"])
-df["Pickup_Datetime"] = pd.to_datetime(df["Order_Date"] + " " + df["Pickup_Time"])
+# Convert datetime columns
+df["Order_DateTime"] = pd.to_datetime(df["Order_Date"] + " " + df["Order_Time"])
+df["Pickup_DateTime"] = pd.to_datetime(df["Order_Date"] + " " + df["Pickup_Time"])
 
-# --- TIME-BASED FEATURES ---
-# Time difference between order and pickup
-df["Order_to_Pickup_Minutes"] = (df["Pickup_Datetime"] - df["Order_Datetime"]).dt.total_seconds() / 60
+# Calculate delays (in minutes)
+df["pickup_delay_min"] = (df["Pickup_DateTime"] - df["Order_DateTime"]).dt.total_seconds() / 60
+df["delivery_delay_min"] = df["Delivery_Time"] - df["pickup_delay_min"]
 
-# Extract time-of-day features
-df["Order_Hour"] = df["Order_Datetime"].dt.hour
-df["Pickup_Hour"] = df["Pickup_Datetime"].dt.hour
-df["Order_DayOfWeek"] = df["Order_Datetime"].dt.dayofweek  # Monday=0
-df["Is_Weekend"] = df["Order_DayOfWeek"].isin([5, 6]).astype(int)
+# Compute statistics for delivery time
+mean_delivery = df["Delivery_Time"].mean()
+std_delivery = df["Delivery_Time"].std()
 
-# --- DELAY-RELATED FEATURES ---
-# Delay ratio (pickup time vs. total delivery time)
-df["Pickup_to_Delivery_Ratio"] = df["Order_to_Pickup_Minutes"] / df["Delivery_Time"]
+# Define “late” deliveries (beyond mean + 1 std)
+threshold = mean_delivery + std_delivery
+df["is_late"] = df["Delivery_Time"] > threshold
 
-# Binary flag: is the pickup delay unusually high?
-pickup_threshold = df["Order_to_Pickup_Minutes"].quantile(0.75)
-df["Is_Pickup_Delayed"] = (df["Order_to_Pickup_Minutes"] > pickup_threshold).astype(int)
+# Create derived efficiency metrics
+df["delivery_speed_index"] = df["Delivery_Time"] / df["pickup_delay_min"].replace(0, np.nan)
+df["on_time_score"] = np.where(df["is_late"], 0, 1)
 
-# Time bins (rush hours, etc.)
-def time_bin(hour):
-    if 7 <= hour < 10:
-        return "Morning_Rush"
-    elif 10 <= hour < 17:
-        return "Daytime"
-    elif 17 <= hour < 21:
-        return "Evening_Rush"
-    else:
-        return "Night"
+# Aggregate data for dashboard visuals
+summary = df.groupby(["Weather", "Traffic", "Vehicle", "Area", "Category"]).agg(
+    avg_delivery_time=("Delivery_Time", "mean"),
+    avg_pickup_delay=("pickup_delay_min", "mean"),
+    percent_late=("is_late", lambda x: 100 * x.mean()),
+    deliveries=("Order_ID", "count")
+).reset_index()
 
-df["Order_Time_Bin"] = df["Order_Hour"].apply(time_bin)
-df["Pickup_Time_Bin"] = df["Pickup_Hour"].apply(time_bin)
+# Save results
+df.to_csv("delivery_with_delay_features.csv", index=False)
+summary.to_csv("delivery_summary_dashboard.csv", index=False)
 
-# --- OPTIONAL: One-hot encode categorical columns ---
-df = pd.get_dummies(df, columns=["Traffic", "Area", "Category", "Order_Time_Bin", "Pickup_Time_Bin"], drop_first=True)
-
-# Final feature dataframe
-delay_features = df[[
-    "Order_ID", "Agent_Age", "Agent_Rating", "Order_to_Pickup_Minutes",
-    "Order_Hour", "Pickup_Hour", "Order_DayOfWeek", "Is_Weekend",
-    "Pickup_to_Delivery_Ratio", "Is_Pickup_Delayed"
-] + [col for col in df.columns if col.startswith(("Traffic_", "Area_", "Category_", "Order_Time_Bin_", "Pickup_Time_Bin_"))]]
-
-print(delay_features.head())
-
-
-# Save the features to a new CSV
-delay_features.to_csv("delay_based_features.csv", index=False)
+print("✅ Feature engineering complete.")
+print("Sample feature columns:", df[[
+    "Order_ID", "pickup_delay_min", "delivery_delay_min", "is_late", "delivery_speed_index"
+]].head())
+print("\nDashboard summary preview:")
+print(summary.head())
