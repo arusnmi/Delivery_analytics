@@ -11,10 +11,10 @@ filt_dataset3=filt_dataset2[filt_dataset2['Agent_Rating']!= 6]
 
 
 
-filt_dataset3.dropna(inplace=True)
+# filt_dataset3.dropna(inplace=True)
 
-filt_dataset3.to_csv('no_na_Last_mile_Delivery_Data.csv', index=False)
+# filt_dataset3.to_csv('no_na_Last_mile_Delivery_Data.csv', index=False)
 
 
-# print(filt_dataset2.describe())
-# print(filt_dataset2.info())
+print(filt_dataset2.describe())
+print(filt_dataset2.info())
