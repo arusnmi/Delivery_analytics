@@ -8,13 +8,14 @@ import plotly.express as px
 st.set_page_config(
     page_title="Delay Analyzer Dashboard",
     page_icon="🚚",
-    layout="centered"
+    layout="wide"
 )
 
-st.title("🚚 Delay Analyzer Dashboard")
+st.title("🚚 Delay Analyzer — Weather & Traffic Impact on Delivery Time")
 st.markdown("""
-Explore how **Traffic** affects average delivery times under different **Weather** conditions.
-Use the dropdown below to select a weather type and view the corresponding traffic distribution.
+This dashboard shows the **average Delivery Time** under different  
+**Weather** and **Traffic** conditions.  
+It helps managers quickly identify how rain, storms, or heavy traffic influence delivery delays.
 """)
 
 # --------------------------------------------
@@ -22,13 +23,13 @@ Use the dropdown below to select a weather type and view the corresponding traff
 # --------------------------------------------
 @st.cache_data
 def load_data():
-    df = pd.read_csv("no_na_Last_mile_Delivery_Data.csv")
+    df = pd.read_csv("delivery_with_delay_features.csv")
     return df
 
 df = load_data()
 
 # --------------------------------------------
-# 3. Data preparation
+# 3. Prepare summary data
 # --------------------------------------------
 delay_summary = (
     df.groupby(["Weather", "Traffic"])["Delivery_Time"]
@@ -38,41 +39,44 @@ delay_summary = (
 )
 
 # --------------------------------------------
-# 4. Sidebar filter
+# 4. Optional filter for weather (you can remove if not needed)
 # --------------------------------------------
-weather_options = delay_summary["Weather"].unique()
-selected_weather = st.selectbox("🌦️ Select Weather Condition:", sorted(weather_options))
+weather_options = sorted(delay_summary["Weather"].unique())
+selected_weather = st.selectbox("🌦️ Select Weather Condition (Optional Filter):", ["All"] + weather_options)
 
-# Filter for the selected weather
-subset = delay_summary[delay_summary["Weather"] == selected_weather]
+if selected_weather != "All":
+    filtered_df = delay_summary[delay_summary["Weather"] == selected_weather]
+else:
+    filtered_df = delay_summary
 
 # --------------------------------------------
-# 5. Interactive pie chart
+# 5. Bar Chart — Delay Analyzer
 # --------------------------------------------
-fig = px.pie(
-    subset,
-    names="Traffic",
-    values="Avg_Delivery_Time",
-    title=f"Traffic Distribution of Average Delivery Time ({selected_weather} Weather)",
+fig = px.bar(
+    filtered_df,
+    x="Weather",
+    y="Avg_Delivery_Time",
     color="Traffic",
-    color_discrete_map={
-        "Low": "#00CC96",
-        "Medium": "#FFA15A",
-        "High": "#FF6692",
-        "Jam": "#EF553B"
-    },
-    hole=0.3
+    barmode="group",
+    title="Average Delivery Time by Weather and Traffic Conditions",
+    labels={"Avg_Delivery_Time": "Avg Delivery Time (minutes)"}
 )
 
-fig.update_traces(textinfo="percent+label")
+fig.update_layout(
+    xaxis_title="Weather Condition",
+    yaxis_title="Average Delivery Time (minutes)",
+    legend_title="Traffic Level",
+    bargap=0.15
+)
 
-# Display chart
 st.plotly_chart(fig, use_container_width=True)
 
 # --------------------------------------------
-# 6. Optional insights
+# 6. Display Summary Table
 # --------------------------------------------
-st.markdown("### 📊 Summary Data")
-st.dataframe(subset.style.format({"Avg_Delivery_Time": "{:.2f} min"}))
+st.markdown("### 📊 Summary Table")
+st.dataframe(
+    filtered_df.style.format({"Avg_Delivery_Time": "{:.2f} min"})
+)
 
-st.caption("Data source: Last Mile Delivery dataset — average delivery time grouped by traffic and weather.")
+st.caption("Data source: Last-mile delivery dataset — grouped by Weather and Traffic.")
