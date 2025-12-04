@@ -119,6 +119,9 @@ if viz == "Delay Analyzer — Weather & Traffic (Bar Chart)":
 
     st.markdown("### Data (averages)")
     st.dataframe(delay_summary.sort_values("Avg_Delivery_Time", ascending=False).style.format({"Avg_Delivery_Time":"{:.2f} min"}))
+    st.markdown("---")
+    st.markdown("#### Insight:")
+    st.markdown(""" Based on what i see here, weathar condtions only impair delivry times when ther there is a sandstorm, or when it is cloudy. ususaly when there is a sandstorm, visablity is blocked, which leads to traffic jams. there is actuly not much of a diffrence in high and medium levels of traffic, lickly because a lot of the same time in in each. One thing observed is that medium traffic has a lower delivery than lower traffic.""")
 
 # --------------------------------------------
 # 2) Vehicle Comparison (Bar Chart) — With Independent Filters
@@ -212,6 +215,7 @@ elif viz == "Vehicle Comparison (Bar Chart)":
     st.dataframe(
         vehicle_summary.style.format({"Avg_Delivery_Time": "{:.2f} min"})
     )
+    st.markdown(""" Based on what i see here, vans are the fastest vehcile for delivery, likely because they can carry more packages at once, reducing the number of trips needed. bikes are the slowest, probably due to their limited speed and capacity. scooters perform better than motorbikes but are still not as efficient as vans, even though it is very close. overall, choosing the right vehicle type is crucial for optimizing delivery times.""")
 
 
 # --------------------------------------------
@@ -246,6 +250,7 @@ elif viz == "Agent Performance (Scatter Plot)":
 
     st.markdown("### Scatter data preview")
     st.dataframe(plot_df[["Order_ID", "Agent_Rating", "Agent_Age", "Agent_Age_Group", "Delivery_Time", "Vehicle", "Area"]].head(200))
+    st.markdown(""" Based on what i see here, a lot of the the agents that are younger than 40 have a higher dilivery time and a lower rating  overall likly becaus older people have more experience.  """)
 
 # --------------------------------------------
 # 4) Area Heatmap (Avg Delivery Time per Area)
@@ -282,6 +287,8 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
 
     st.markdown("### Area averages")
     st.dataframe(area_summary.style.format({"Avg_Delivery_Time":"{:.2f} min"}))
+    st.markdown(""" Based on what i see here, semi-urban areas tend to have higher average delivery times compared to urban and metropotlian areas. This could be due to a combination of factors such as traffic congestion, road infrastructure, and delivery density. Urban areas likely benefit from better logistics networks and shorter distances between delivery points, while rural areas may have less traffic and more direct routes. Semi-urban areas might face challenges from both ends, leading to increased delivery times.""")
+
 
 # --------------------------------------------
 # 5) Category Visualizer (Boxplot)
@@ -309,6 +316,8 @@ elif viz == "Category Visualizer (Boxplot)":
     st.markdown("### Category counts (top shown)")
     cat_summary = plot_df.groupby("Category")["Delivery_Time"].agg(["count", "mean", "median"]).reset_index()
     st.dataframe(cat_summary.sort_values("count", ascending=False).style.format({"mean":"{:.2f}", "median":"{:.2f}"}))
+    st.markdown(""" Based on what i see here, groceries take less time to apper compared to other categories, likely because they are often prioritized for quick delivery to maintain freshness. every other category has a similar delivery time, with clothing being slightly higher, possibly due to the need for careful handling and packaging. overall, the category of the product does influence delivery time, but other factors like distance and traffic likely play a significant role as well.""")
+
 
 
 
