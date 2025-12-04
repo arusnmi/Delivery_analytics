@@ -121,32 +121,98 @@ if viz == "Delay Analyzer — Weather & Traffic (Bar Chart)":
     st.dataframe(delay_summary.sort_values("Avg_Delivery_Time", ascending=False).style.format({"Avg_Delivery_Time":"{:.2f} min"}))
 
 # --------------------------------------------
-# 2) Vehicle Comparison (Bar Chart)
+# 2) Vehicle Comparison (Bar Chart) — With Independent Filters
 # --------------------------------------------
 elif viz == "Vehicle Comparison (Bar Chart)":
     st.header("Vehicle Comparison — Average Delivery Time by Vehicle Type")
+
+    st.sidebar.markdown("### Vehicle Comparison Filters")
+
+    # Independent filter: Category
+    category_options = ["All"] + sorted(df["Category"].unique().tolist())
+    selected_category_v = st.sidebar.selectbox(
+        "Filter by Category (Vehicle View)", 
+        category_options,
+        index=0
+    )
+
+    # Independent filter: Area
+    area_options = ["All"] + sorted(df["Area"].unique().tolist())
+    selected_area_v = st.sidebar.selectbox(
+        "Filter by Area (Vehicle View)", 
+        area_options,
+        index=0
+    )
+
+    # Independent filter: Weather (optional)
+    weather_options_v = ["All"] + sorted(df["Weather"].unique().tolist())
+    selected_weather_v = st.sidebar.selectbox(
+        "Filter by Weather (Vehicle View)", 
+        weather_options_v,
+        index=0
+    )
+
+    # Independent filter: Traffic (optional)
+    traffic_options_v = ["All"] + sorted(df["Traffic"].unique().tolist())
+    selected_traffic_v = st.sidebar.selectbox(
+        "Filter by Traffic (Vehicle View)", 
+        traffic_options_v,
+        index=0
+    )
+
+    # Start with full df (NOT work_df — to avoid global filter interference)
+    vehicle_df = df.copy()
+
+    # Apply filters only for this visualization
+    if selected_category_v != "All":
+        vehicle_df = vehicle_df[vehicle_df["Category"] == selected_category_v]
+
+    if selected_area_v != "All":
+        vehicle_df = vehicle_df[vehicle_df["Area"] == selected_area_v]
+
+    if selected_weather_v != "All":
+        vehicle_df = vehicle_df[vehicle_df["Weather"] == selected_weather_v]
+
+    if selected_traffic_v != "All":
+        vehicle_df = vehicle_df[vehicle_df["Traffic"] == selected_traffic_v]
+
+    # Aggregate delivery time by vehicle
     vehicle_summary = (
-        work_df.groupby("Vehicle")["Delivery_Time"]
+        vehicle_df.groupby("Vehicle")["Delivery_Time"]
         .mean()
         .reset_index()
         .rename(columns={"Delivery_Time": "Avg_Delivery_Time"})
     )
 
-    # Sort vehicles by average time
+    # Sort by average delivery time
     vehicle_summary = vehicle_summary.sort_values("Avg_Delivery_Time")
 
+    # Bar chart
     fig = px.bar(
         vehicle_summary,
         x="Vehicle",
         y="Avg_Delivery_Time",
-        title="Average Delivery Time by Vehicle Type",
-        labels={"Avg_Delivery_Time": "Avg Delivery Time (minutes)"},
+        title=(
+            "Average Delivery Time by Vehicle Type"
+            f"{'' if selected_category_v == 'All' else f' — Category: {selected_category_v}'}"
+            f"{'' if selected_area_v == 'All' else f' — Area: {selected_area_v}'}"
+        ),
+        labels={"Avg_Delivery_Time": "Avg Delivery Time (minutes)"}
     )
-    fig.update_layout(xaxis_title="Vehicle Type", yaxis_title="Average Delivery Time (minutes)")
+
+    fig.update_layout(
+        xaxis_title="Vehicle Type",
+        yaxis_title="Average Delivery Time (minutes)",
+        bargap=0.15
+    )
+    
     st.plotly_chart(fig, use_container_width=True)
 
-    st.markdown("### Vehicle summary")
-    st.dataframe(vehicle_summary.style.format({"Avg_Delivery_Time":"{:.2f} min"}))
+    st.markdown("### Filtered Vehicle Summary")
+    st.dataframe(
+        vehicle_summary.style.format({"Avg_Delivery_Time": "{:.2f} min"})
+    )
+
 
 # --------------------------------------------
 # 3) Agent Performance Scatter Plot
@@ -244,11 +310,5 @@ elif viz == "Category Visualizer (Boxplot)":
     cat_summary = plot_df.groupby("Category")["Delivery_Time"].agg(["count", "mean", "median"]).reset_index()
     st.dataframe(cat_summary.sort_values("count", ascending=False).style.format({"mean":"{:.2f}", "median":"{:.2f}"}))
 
-# --------------------------------------------
-# Footer / tips
-# --------------------------------------------
-st.markdown("---")
-st.markdown(
-    "Tips: Normalize messy category/area names before running the app for more consistent grouping. "
-    "If you want additional charts (e.g., stacked bars, time series of delivery times, map-based area analysis), tell me which you'd prefer and I can add them."
-)
+
+
