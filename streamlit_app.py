@@ -227,7 +227,7 @@ elif viz == "Agent Performance (Scatter Plot)":
     # Optionally filter rating range
     min_rating = int(work_df["Agent_Rating"].min()) if not work_df["Agent_Rating"].isna().all() else 0
     max_rating = int(work_df["Agent_Rating"].max()) if not work_df["Agent_Rating"].isna().all() else 5
-    rating_range = st.sidebar.slider("Agent Rating range", min_value=min_rating, max_value=max_rating, value=(min_rating, max_rating))
+    rating_range = st.sidebar.slider("Agent Rating range", min_value=3, max_value=5, value=(3, 5))
 
     plot_df = work_df.dropna(subset=["Agent_Rating", "Delivery_Time"])
     plot_df = plot_df[(plot_df["Agent_Rating"] >= rating_range[0]) & (plot_df["Agent_Rating"] <= rating_range[1])]
@@ -291,7 +291,7 @@ elif viz == "Category Visualizer (Boxplot)":
     st.markdown("Boxplots show the distribution of Delivery_Time for each product Category.")
 
     # Optionally let user choose top N categories by count to make plot readable
-    top_n = st.sidebar.slider("Show top N categories by count", min_value=5, max_value=50, value=20)
+    top_n = st.sidebar.slider("Show top N categories by count", min_value=5, max_value=20, value=20)
     cat_counts = work_df["Category"].value_counts().nlargest(top_n).index.tolist()
     plot_df = work_df[work_df["Category"].isin(cat_counts)]
 
