@@ -147,37 +147,15 @@ elif viz == "Vehicle Comparison (Bar Chart)":
         index=0
     )
 
-    # Independent filter: Weather (optional)
-    weather_options_v = ["All"] + sorted(df["Weather"].unique().tolist())
-    selected_weather_v = st.sidebar.selectbox(
-        "Filter by Weather (Vehicle View)", 
-        weather_options_v,
-        index=0
-    )
+    # Start with work_df (already filtered by global weather/traffic filters)
+    vehicle_df = work_df.copy()
 
-    # Independent filter: Traffic (optional)
-    traffic_options_v = ["All"] + sorted(df["Traffic"].unique().tolist())
-    selected_traffic_v = st.sidebar.selectbox(
-        "Filter by Traffic (Vehicle View)", 
-        traffic_options_v,
-        index=0
-    )
-
-    # Start with full df (NOT work_df — to avoid global filter interference)
-    vehicle_df = df.copy()
-
-    # Apply filters only for this visualization
+    # Apply only category and area filters for this visualization
     if selected_category_v != "All":
         vehicle_df = vehicle_df[vehicle_df["Category"] == selected_category_v]
 
     if selected_area_v != "All":
         vehicle_df = vehicle_df[vehicle_df["Area"] == selected_area_v]
-
-    if selected_weather_v != "All":
-        vehicle_df = vehicle_df[vehicle_df["Weather"] == selected_weather_v]
-
-    if selected_traffic_v != "All":
-        vehicle_df = vehicle_df[vehicle_df["Traffic"] == selected_traffic_v]
 
     # Aggregate delivery time by vehicle
     vehicle_summary = (
