@@ -259,7 +259,7 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
     st.header("Area Heatmap — Delivery Time Grid (20-min Time Buckets)")
     st.markdown(
         "This heatmap shows how many deliveries fall inside each **20-minute delivery time bucket** for each Area. "
-        "Colors use a **discrete palette** (not a gradient) with global normalization."
+        "Colors now use a **multi-colour gradient** for better readability."
     )
 
     # --------------------------------------------------
@@ -291,14 +291,15 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
     grid = grid.loc[grid.sum(axis=1).sort_values(ascending=False).index]
 
     # --------------------------------------------------
-    # DISCRETE COLOR PALETTE (NOT GRADIENT)
+    # MULTI-COLOUR GRADIENT PALETTE
+    # Blue → Green → Yellow → Orange → Red
     # --------------------------------------------------
     colorscale = [
-        [0.0,  "#ffe5e5"],
-        [0.25, "#ffb3b3"],
-        [0.50, "#ff6666"],
-        [0.75, "#ff3333"],
-        [1.0,  "#b30000"]
+        [0.0,  "#0000FF"],   # Blue
+        [0.25, "#00FF00"],   # Green
+        [0.50, "#FFFF00"],   # Yellow
+        [0.75, "#FFA500"],   # Orange
+        [1.0,  "#FF0000"]    # Red
     ]
 
     # --------------------------------------------------
@@ -319,13 +320,11 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
         zmax=grid.values.max()
     )
 
-    # --------------------------------------------------
-    # FULL OPACITY — MAKE HEATMAP MORE READABLE
-    # --------------------------------------------------
-    fig.update_traces(opacity=10.0)
+    # Full opacity (more readable)
+    fig.update_traces(opacity=1.0)
 
     fig.update_layout(
-        title="Heatmap — Deliveries per 20-Minute Time Bucket (Discrete Colors)",
+        title="Heatmap — Deliveries per 20-Minute Time Bucket (Multi-Colour Gradient)",
         xaxis_title="Delivery Time Bucket (min)",
         yaxis_title="Area"
     )
@@ -334,6 +333,7 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
 
     st.markdown("### Heatmap Data (Counts)")
     st.dataframe(grid)
+
     st.markdown("#### Insight:")
     st.markdown(""" Based on what i see here, semi-urban areas tend to have higher average delivery times compared to urban and metropotlian areas. This could be due to a combination of factors such as traffic congestion, road infrastructure, and delivery density. Urban areas likely benefit from better logistics networks and shorter distances between delivery points, while rural areas may have less traffic and more direct routes. Semi-urban areas might face challenges from both ends, leading to increased delivery times.""")
 
