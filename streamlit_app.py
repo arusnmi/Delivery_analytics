@@ -127,7 +127,7 @@ if viz == "Delay Analyzer — Weather & Traffic (Bar Chart)":
 # 2) Vehicle Comparison (Bar Chart) — With Independent Filters
 # --------------------------------------------
 elif viz == "Vehicle Comparison (Bar Chart)":
-    st.header("Vehicle Comparison — Average Delivery Time by Vehicle Type")
+    st.header("Vehicle Comparison — On-Time Performance by Vehicle Type")
 
     st.sidebar.markdown("### Vehicle Comparison Filters")
 
@@ -157,44 +157,64 @@ elif viz == "Vehicle Comparison (Bar Chart)":
     if selected_area_v != "All":
         vehicle_df = vehicle_df[vehicle_df["Area"] == selected_area_v]
 
-    # Aggregate delivery time by vehicle
-    vehicle_summary = (
-        vehicle_df.groupby("Vehicle")["Delivery_Time"]
-        .mean()
+    # Compute ON-TIME performance per vehicle
+    performance_summary = (
+        vehicle_df.groupby("Vehicle")
+        .agg(
+            total_deliveries=("on_time_score", "count"),
+            on_time_count=("on_time_score", "sum"),
+        )
         .reset_index()
-        .rename(columns={"Delivery_Time": "Avg_Delivery_Time"})
     )
 
-    # Sort by average delivery time
-    vehicle_summary = vehicle_summary.sort_values("Avg_Delivery_Time")
+    # Calculate on-time percentage
+    performance_summary["on_time_percentage"] = (
+        performance_summary["on_time_count"] /
+        performance_summary["total_deliveries"] * 100
+    )
+
+    # Sort by on-time performance
+    performance_summary = performance_summary.sort_values(
+        "on_time_percentage", ascending=False
+    )
 
     # Bar chart
     fig = px.bar(
-        vehicle_summary,
+        performance_summary,
         x="Vehicle",
-        y="Avg_Delivery_Time",
+        y="on_time_percentage",
         title=(
-            "Average Delivery Time by Vehicle Type"
+            "On-Time Delivery Performance by Vehicle Type"
             f"{'' if selected_category_v == 'All' else f' — Category: {selected_category_v}'}"
             f"{'' if selected_area_v == 'All' else f' — Area: {selected_area_v}'}"
         ),
-        labels={"Avg_Delivery_Time": "Avg Delivery Time (minutes)"}
+        labels={"on_time_percentage": "On-Time Delivery (%)"},
+        color="on_time_percentage",
+        color_continuous_scale="Greens"
     )
 
     fig.update_layout(
         xaxis_title="Vehicle Type",
-        yaxis_title="Average Delivery Time (minutes)",
+        yaxis_title="On-Time Delivery (%)",
         bargap=0.15
     )
     
     st.plotly_chart(fig, use_container_width=True)
 
-    st.markdown("### Filtered Vehicle Summary")
+    st.markdown("### Vehicle On-Time Summary")
     st.dataframe(
-        vehicle_summary.style.format({"Avg_Delivery_Time": "{:.2f} min"})
+        performance_summary.style.format({
+            "on_time_percentage": "{:.2f} %",
+            "on_time_count": "{:.0f}",
+            "total_deliveries": "{:.0f}"
+        })
     )
+
     st.markdown("#### Insight:")
-    st.markdown(""" Based on what i see here, vans are the fastest vehcile for delivery, likely because they can carry more packages at once, reducing the number of trips needed. bikes are the slowest, probably due to their limited speed and capacity. scooters perform better than motorbikes but are still not as efficient as vans, even though it is very close. overall, choosing the right vehicle type is crucial for optimizing delivery times.""")
+    st.markdown("""
+        This view shows how reliably each vehicle type delivers orders on time.
+        Unlike average delivery time, **on-time score directly reflects performance consistency**.
+    """)
 
 
 # --------------------------------------------
