@@ -256,13 +256,9 @@ elif viz == "Agent Performance (Scatter Plot)":
 # 4) Area Heatmap (Avg Delivery Time per Area)
 # --------------------------------------------
 elif viz == "Area Heatmap (Avg Delivery Time)":
-    # We import graph_objects for precise control over the Heatmap data binding
-    import plotly.graph_objects as go
-
     st.header("Area Heatmap — Delivery Time Grid (20-min Time Buckets)")
     st.markdown(
-        "This heatmap shows how many deliveries fall inside each **20-minute delivery time bucket** for each Area. "
-        "Uses **log-scaled counts** for color calculation, but displays **actual counts** on hover."
+        "This heatmap uses a log-enhanced colour scale for visibility, but hovering shows the **actual count**."
     )
 
     # --------------------------------------------------
@@ -272,10 +268,13 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
     bins = list(range(0, max_time + 40, 20))
     labels = [f"{i}-{i+20}" for i in range(0, max_time + 20, 20)]
 
+    # Remove 280–300 bucket
+    labels = [lab for lab in labels if lab != "280-300"]
+
     work_df["Time_Bucket"] = pd.cut(
         work_df["Delivery_Time"],
         bins=bins,
-        labels=labels,
+        labels=[f"{i}-{i+20}" for i in range(0, max_time + 20, 20)],
         right=False
     )
 
@@ -290,52 +289,65 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
         fill_value=0
     )
 
-    # Sort for better visuals
+    # Drop deleted column if exists
+    if "280-300" in grid.columns:
+        grid = grid.drop(columns=["280-300"])
+
+    # Sort areas
     grid = grid.loc[grid.sum(axis=1).sort_values(ascending=False).index]
 
-    # --- DROP THE LAST COLUMN (280-300) ---
-    grid = grid.iloc[:, :-1]
-
     # --------------------------------------------------
-    # VALUE DISPERSAL (Log Scale for Color)
+    # Log-scale for colours (better visualization)
     # --------------------------------------------------
-    # This is the log value used for color.
     heat_values = np.log1p(grid.values)
 
     # --------------------------------------------------
-    # 7-COLOUR GRADIENT
+    # Multi-colour scale (7 colors)
     # --------------------------------------------------
     colorscale = [
-        [0.0,  "#0000FF"],   # Blue
-        [0.16, "#00BFFF"],   # Deep Sky Blue
-        [0.33, "#00FF7F"],   # Spring Green
-        [0.50, "#FFFF00"],   # Yellow
-        [0.66, "#FFA500"],   # Orange
-        [0.83, "#FF4500"],   # Orange Red
-        [1.0,  "#8B0000"]    # Dark Red
+        [0.0,  "#0000FF"],
+        [0.16, "#00BFFF"],
+        [0.33, "#00FF7F"],
+        [0.50, "#FFFF00"],
+        [0.66, "#FFA500"],
+        [0.83, "#FF4500"],
+        [1.0,  "#8B0000"]
     ]
 
     # --------------------------------------------------
-    # Heatmap using graph_objects (go.Heatmap)
+    # Heatmap — with hover showing ACTUAL COUNT
     # --------------------------------------------------
-    fig = go.Figure(data=go.Heatmap(
-        z=heat_values,
-        x=grid.columns.astype(str),
-        y=grid.index.astype(str),
-        # grid.values contains the actual count (the value before log1p)
-        customdata=grid.values,
-        # %{customdata} now reliably refers to the raw count
-        hovertemplate=(
-            "<b>Area:</b> %{y}<br>"
-            "<b>Time Bucket:</b> %{x}<br>"
-            "<b>Count:</b> %{customdata}<extra></extra>"
+    fig = px.imshow(
+        heat_values,
+        labels=dict(
+            x="Delivery Time (20-min Buckets)",
+            y="Area",
+            color="Adjusted Scale"
         ),
-        colorscale=colorscale,
-        colorbar=dict(title="Log Count")
-    ))
+        x=grid.columns,
+        y=grid.index,
+        aspect="auto",
+        color_continuous_scale=colorscale,
+        zmin=heat_values.min(),
+        zmax=heat_values.max(),
+        custom_data=grid.values  # <<–– REAL COUNTS HERE
+    )
+
+    # FULL OPACITY
+    fig.update_traces(opacity=1.0)
+
+    # --------------------------------------------------
+    # Custom hovertemplate
+    # --------------------------------------------------
+    fig.update_traces(
+        hovertemplate=
+        "<b>Area:</b> %{y}<br>" +
+        "<b>Time Bucket:</b> %{x}<br>" +
+        "<b>Actual Count:</b> %{customdata}<extra></extra>"
+    )
 
     fig.update_layout(
-        title="Heatmap — Deliveries per 20-Minute Time Bucket (Log-Scaled Color, Actual Count Hover)",
+        title="Heatmap — Deliveries per 20-Minute Time Bucket (Hover Shows Actual Counts)",
         xaxis_title="Delivery Time Bucket (min)",
         yaxis_title="Area"
     )
@@ -343,6 +355,7 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
     st.plotly_chart(fig, use_container_width=True)
 
     st.dataframe(grid)
+
 
     st.markdown("#### Insight:")
     st.markdown(""" Based on what i see here, semi-urban areas tend to have higher average delivery times compared to urban and metropotlian areas. This could be due to a combination of factors such as traffic congestion, road infrastructure, and delivery density. Urban areas likely benefit from better logistics networks and shorter distances between delivery points, while rural areas may have less traffic and more direct routes. Semi-urban areas might face challenges from both ends, leading to increased delivery times.""")
