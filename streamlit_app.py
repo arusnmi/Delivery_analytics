@@ -255,10 +255,10 @@ elif viz == "Agent Performance (Scatter Plot)":
 # --------------------------------------------
 # 4) Area Heatmap (Avg Delivery Time per Area)
 # --------------------------------------------
-# --------------------------------------------
-# 4) Area Heatmap (Avg Delivery Time per Area)
-# --------------------------------------------
 elif viz == "Area Heatmap (Avg Delivery Time)":
+    # We import graph_objects for precise control over the Heatmap data binding
+    import plotly.graph_objects as go
+
     st.header("Area Heatmap — Delivery Time Grid (20-min Time Buckets)")
     st.markdown(
         "This heatmap shows how many deliveries fall inside each **20-minute delivery time bucket** for each Area. "
@@ -294,12 +294,13 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
     grid = grid.loc[grid.sum(axis=1).sort_values(ascending=False).index]
 
     # --- DROP THE LAST COLUMN (280-300) ---
+    # We simply slice off the last column of the dataframe
     grid = grid.iloc[:, :-1]
 
     # --------------------------------------------------
-    # VALUE DISPERSAL — MAKE MID VALUES SEPARATE BETTER
+    # VALUE DISPERSAL (Log Scale for Color)
     # --------------------------------------------------
-    heat_values = np.log1p(grid.values)   # log scale for COLOR only
+    heat_values = np.log1p(grid.values)
 
     # --------------------------------------------------
     # 7-COLOUR GRADIENT
@@ -315,31 +316,24 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
     ]
 
     # --------------------------------------------------
-    # Heatmap
+    # Heatmap using graph_objects (go.Heatmap)
     # --------------------------------------------------
-    fig = px.imshow(
-        heat_values,
-        labels=dict(
-            x="Delivery Time (20-min Buckets)",
-            y="Area",
-            color="Log Count"
+    # We use go.Heatmap directly to ensure 'customdata' is bound correctly.
+    # z: The log-scaled values for COLOR.
+    # customdata: The raw grid values for HOVER.
+    fig = go.Figure(data=go.Heatmap(
+        z=heat_values,
+        x=grid.columns.astype(str),  # Ensure axis labels are strings
+        y=grid.index.astype(str),
+        customdata=grid.values,      # Pass the raw counts here
+        hovertemplate=(
+            "<b>Area:</b> %{y}<br>"
+            "<b>Time Bucket:</b> %{x}<br>"
+            "<b>Count:</b> %{customdata}<extra></extra>"
         ),
-        x=grid.columns,
-        y=grid.index,
-        aspect="auto",
-        color_continuous_scale=colorscale,
-        zmin=heat_values.min(),
-        zmax=heat_values.max()
-    )
-
-    # --- THE FIX ---
-    # 1. We pass grid.values (the RAW counts) into the 'text' attribute.
-    # 2. We refer to it as %{text} in the hovertemplate. 
-    # This avoids the %{customdata} dimension errors.
-    fig.update_traces(
-        text=grid.values, 
-        hovertemplate="<b>Area:</b> %{y}<br><b>Time:</b> %{x}<br><b>Count:</b> %{text}<extra></extra>"
-    )
+        colorscale=colorscale,
+        colorbar=dict(title="Log Count")
+    ))
 
     fig.update_layout(
         title="Heatmap — Deliveries per 20-Minute Time Bucket (Log-Scaled Color, Actual Count Hover)",
@@ -348,7 +342,7 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
     )
 
     st.plotly_chart(fig, use_container_width=True)
-    
+
     st.dataframe(grid)
 
     st.markdown("#### Insight:")
