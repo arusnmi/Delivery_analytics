@@ -255,11 +255,14 @@ elif viz == "Agent Performance (Scatter Plot)":
 # --------------------------------------------
 # 4) Area Heatmap (Avg Delivery Time per Area)
 # --------------------------------------------
+# --------------------------------------------
+# 4) Area Heatmap (Avg Delivery Time per Area)
+# --------------------------------------------
 elif viz == "Area Heatmap (Avg Delivery Time)":
     st.header("Area Heatmap — Delivery Time Grid (20-min Time Buckets)")
     st.markdown(
         "This heatmap shows how many deliveries fall inside each **20-minute delivery time bucket** for each Area. "
-        "Uses **log-scaled counts** for color calculation (to make low/mid values visible), but displays **actual counts** on hover."
+        "Uses **log-scaled counts** for color calculation, but displays **actual counts** on hover."
     )
 
     # --------------------------------------------------
@@ -290,16 +293,16 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
     # Sort for better visuals
     grid = grid.loc[grid.sum(axis=1).sort_values(ascending=False).index]
 
-    # --- UPDATE 1: Remove the last redundant column (280-300) ---
+    # --- DROP THE LAST COLUMN (280-300) ---
     grid = grid.iloc[:, :-1]
 
     # --------------------------------------------------
     # VALUE DISPERSAL — MAKE MID VALUES SEPARATE BETTER
     # --------------------------------------------------
-    heat_values = np.log1p(grid.values)   # log scale (fixes Semi-Urban issue)
+    heat_values = np.log1p(grid.values)   # log scale for COLOR only
 
     # --------------------------------------------------
-    # 7-COLOUR GRADIENT (very readable)
+    # 7-COLOUR GRADIENT
     # --------------------------------------------------
     colorscale = [
         [0.0,  "#0000FF"],   # Blue
@@ -329,12 +332,13 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
         zmax=heat_values.max()
     )
 
-    # --- UPDATE 2: Update traces to show ACTUAL count on hover ---
-    # We pass the original grid.values as customdata
-    # We update the hovertemplate to use %{customdata} instead of %{z}
+    # --- THE FIX ---
+    # 1. We pass grid.values (the RAW counts) into the 'text' attribute.
+    # 2. We refer to it as %{text} in the hovertemplate. 
+    # This avoids the %{customdata} dimension errors.
     fig.update_traces(
-        customdata=grid.values,
-        hovertemplate="<b>Area:</b> %{y}<br><b>Time Bucket:</b> %{x}<br><b>Count:</b> %{customdata}<extra></extra>"
+        text=grid.values, 
+        hovertemplate="<b>Area:</b> %{y}<br><b>Time:</b> %{x}<br><b>Count:</b> %{text}<extra></extra>"
     )
 
     fig.update_layout(
@@ -344,7 +348,7 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
     )
 
     st.plotly_chart(fig, use_container_width=True)
-
+    
     st.dataframe(grid)
 
     st.markdown("#### Insight:")
