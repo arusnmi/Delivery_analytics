@@ -258,10 +258,11 @@ elif viz == "Agent Performance (Scatter Plot)":
 elif viz == "Area Heatmap (Avg Delivery Time)":
     st.header("Area Heatmap — Delivery Time Grid (20-min Time Buckets)")
     st.markdown(
-        "This heatmap shows how many deliveries fall inside each **20-minute time bucket** for every Area."
+        "This heatmap shows how many deliveries fall inside each **20-minute delivery time bucket** for each Area. "
+        "Colors are normalized across the entire heatmap so dark cells represent the highest delivery concentrations."
     )
 
-    # Create 20-min bins for Delivery_Time
+    # Create 20-minute bins for Delivery_Time
     max_time = int(work_df["Delivery_Time"].max())
     bins = list(range(0, max_time + 40, 20))
     labels = [f"{i}-{i+20}" for i in range(0, max_time + 20, 20)]
@@ -273,7 +274,7 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
         right=False
     )
 
-    # Pivot table (Area × TimeBucket → count of deliveries)
+    # Create pivot (Area × TimeBucket → count)
     grid = work_df.pivot_table(
         index="Area",
         columns="Time_Bucket",
@@ -282,21 +283,25 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
         fill_value=0
     )
 
-    # Sort areas by total delays
+    # Sort areas by total count (optional but looks cleaner)
     grid = grid.loc[grid.sum(axis=1).sort_values(ascending=False).index]
 
-    # Heatmap using Plotly
+    # GLOBAL COLOR NORMALIZATION (put it right in px.imshow)
     fig = px.imshow(
         grid.values,
         labels=dict(x="Delivery Time (20-min Buckets)", y="Area", color="Count"),
         x=grid.columns,
         y=grid.index,
         aspect="auto",
-        color_continuous_scale="Reds"
+        color_continuous_scale="Reds",
+
+        # 🔥 THIS IS THE NORMALIZATION
+        zmin=grid.values.min(),
+        zmax=grid.values.max()
     )
 
     fig.update_layout(
-        title="Heatmap — Deliveries per 20-Minute Time Bucket",
+        title="Heatmap — Deliveries per 20-Minute Time Bucket (Normalized Colors)",
         xaxis_title="Delivery Time Bucket (min)",
         yaxis_title="Area"
     )
