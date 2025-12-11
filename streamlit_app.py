@@ -259,11 +259,11 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
     st.header("Area Heatmap — Delivery Time Grid (20-min Time Buckets)")
     st.markdown(
         "This heatmap shows how many deliveries fall inside each **20-minute delivery time bucket** for each Area. "
-        "Colors now use a **multi-colour gradient** for better readability."
+        "Uses **log-scaled counts** and a **7-color gradient** to make mid-range values more readable."
     )
 
     # --------------------------------------------------
-    # Create 20-minute bins for Delivery_Time
+    # Create 20-minute bins
     # --------------------------------------------------
     max_time = int(work_df["Delivery_Time"].max())
     bins = list(range(0, max_time + 40, 20))
@@ -277,7 +277,7 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
     )
 
     # --------------------------------------------------
-    # Create pivot (Area × TimeBucket → count)
+    # Pivot table (Area × TimeBucket)
     # --------------------------------------------------
     grid = work_df.pivot_table(
         index="Area",
@@ -287,52 +287,57 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
         fill_value=0
     )
 
-    # Sort areas by total volumes for nicer visuals
+    # Sort for better visuals
     grid = grid.loc[grid.sum(axis=1).sort_values(ascending=False).index]
 
     # --------------------------------------------------
-    # MULTI-COLOUR GRADIENT PALETTE
-    # Blue → Green → Yellow → Orange → Red
+    # VALUE DISPERSAL — MAKE MID VALUES SEPARATE BETTER
+    # --------------------------------------------------
+    heat_values = np.log1p(grid.values)   # log scale (fixes Semi-Urban issue)
+
+    # --------------------------------------------------
+    # 7-COLOUR GRADIENT (very readable)
     # --------------------------------------------------
     colorscale = [
         [0.0,  "#0000FF"],   # Blue
-        [0.25, "#00FF00"],   # Green
+        [0.16, "#00BFFF"],   # Deep Sky Blue
+        [0.33, "#00FF7F"],   # Spring Green
         [0.50, "#FFFF00"],   # Yellow
-        [0.75, "#FFA500"],   # Orange
-        [1.0,  "#FF0000"]    # Red
+        [0.66, "#FFA500"],   # Orange
+        [0.83, "#FF4500"],   # Orange Red
+        [1.0,  "#8B0000"]    # Dark Red
     ]
 
     # --------------------------------------------------
     # Heatmap
     # --------------------------------------------------
     fig = px.imshow(
-        grid.values,
+        heat_values,
         labels=dict(
             x="Delivery Time (20-min Buckets)",
             y="Area",
-            color="Count"
+            color="Log Count"
         ),
         x=grid.columns,
         y=grid.index,
         aspect="auto",
         color_continuous_scale=colorscale,
-        zmin=grid.values.min(),
-        zmax=grid.values.max()
+        zmin=heat_values.min(),
+        zmax=heat_values.max()
     )
 
-    # Full opacity (more readable)
     fig.update_traces(opacity=1.0)
 
     fig.update_layout(
-        title="Heatmap — Deliveries per 20-Minute Time Bucket (Multi-Colour Gradient)",
+        title="Heatmap — Deliveries per 20-Minute Time Bucket (Log-Scaled, Multi-Colour)",
         xaxis_title="Delivery Time Bucket (min)",
         yaxis_title="Area"
     )
 
     st.plotly_chart(fig, use_container_width=True)
 
-    st.markdown("### Heatmap Data (Counts)")
     st.dataframe(grid)
+
 
     st.markdown("#### Insight:")
     st.markdown(""" Based on what i see here, semi-urban areas tend to have higher average delivery times compared to urban and metropotlian areas. This could be due to a combination of factors such as traffic congestion, road infrastructure, and delivery density. Urban areas likely benefit from better logistics networks and shorter distances between delivery points, while rural areas may have less traffic and more direct routes. Semi-urban areas might face challenges from both ends, leading to increased delivery times.""")
