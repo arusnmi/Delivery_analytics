@@ -314,14 +314,15 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
         x=grid.columns,
         y=grid.index,
         aspect="auto",
-
-        # use discrete color palette
         color_continuous_scale=colorscale,
-
-        # Normalize the full heatmap scale
         zmin=grid.values.min(),
         zmax=grid.values.max()
     )
+
+    # --------------------------------------------------
+    # FULL OPACITY — MAKE HEATMAP MORE READABLE
+    # --------------------------------------------------
+    fig.update_traces(opacity=1.0)
 
     fig.update_layout(
         title="Heatmap — Deliveries per 20-Minute Time Bucket (Discrete Colors)",
@@ -333,7 +334,8 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
 
     st.markdown("### Heatmap Data (Counts)")
     st.dataframe(grid)
-
+    st.markdown("#### Insight:")
+    st.markdown(""" Based on what i see here, semi-urban areas tend to have higher average delivery times compared to urban and metropotlian areas. This could be due to a combination of factors such as traffic congestion, road infrastructure, and delivery density. Urban areas likely benefit from better logistics networks and shorter distances between delivery points, while rural areas may have less traffic and more direct routes. Semi-urban areas might face challenges from both ends, leading to increased delivery times.""")
 
 # --------------------------------------------
 # 5) Category Visualizer (Boxplot)
