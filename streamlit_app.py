@@ -204,7 +204,7 @@ elif viz == "Agent Performance (Scatter Plot)":
     st.header("Agent Performance — Rating vs Delivery Time")
     st.markdown(
         "Scatter plot of `Agent_Rating` (x) vs `Delivery_Time` (y), colored by `Agent_Age_Group`. "
-        "Use this to spot whether higher-rated or older/younger agents perform faster deliveries."
+        "Use this to spot whether higher-rated or older/younger agents perform faster deliveries. To select between both the diffrent age groupes, click on the legend items on the right side of the plot"
     )
 
     # Optionally filter rating range
