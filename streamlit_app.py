@@ -294,12 +294,12 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
     grid = grid.loc[grid.sum(axis=1).sort_values(ascending=False).index]
 
     # --- DROP THE LAST COLUMN (280-300) ---
-    # We simply slice off the last column of the dataframe
     grid = grid.iloc[:, :-1]
 
     # --------------------------------------------------
     # VALUE DISPERSAL (Log Scale for Color)
     # --------------------------------------------------
+    # This is the log value used for color.
     heat_values = np.log1p(grid.values)
 
     # --------------------------------------------------
@@ -318,14 +318,13 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
     # --------------------------------------------------
     # Heatmap using graph_objects (go.Heatmap)
     # --------------------------------------------------
-    # We use go.Heatmap directly to ensure 'customdata' is bound correctly.
-    # z: The log-scaled values for COLOR.
-    # customdata: The raw grid values for HOVER.
     fig = go.Figure(data=go.Heatmap(
         z=heat_values,
-        x=grid.columns.astype(str),  # Ensure axis labels are strings
+        x=grid.columns.astype(str),
         y=grid.index.astype(str),
-        customdata=grid.values,      # Pass the raw counts here
+        # grid.values contains the actual count (the value before log1p)
+        customdata=grid.values,
+        # %{customdata} now reliably refers to the raw count
         hovertemplate=(
             "<b>Area:</b> %{y}<br>"
             "<b>Time Bucket:</b> %{x}<br>"
