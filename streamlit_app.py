@@ -259,7 +259,7 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
     st.header("Area Heatmap — Delivery Time Grid (20-min Time Buckets)")
     st.markdown(
         "This heatmap shows how many deliveries fall inside each **20-minute delivery time bucket** for each Area. "
-        "Uses **log-scaled counts** and a **7-color gradient** to make mid-range values more readable."
+        "Uses **log-scaled counts** for color calculation (to make low/mid values visible), but displays **actual counts** on hover."
     )
 
     # --------------------------------------------------
@@ -289,6 +289,9 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
 
     # Sort for better visuals
     grid = grid.loc[grid.sum(axis=1).sort_values(ascending=False).index]
+
+    # --- UPDATE 1: Remove the last redundant column (280-300) ---
+    grid = grid.iloc[:, :-1]
 
     # --------------------------------------------------
     # VALUE DISPERSAL — MAKE MID VALUES SEPARATE BETTER
@@ -326,10 +329,16 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
         zmax=heat_values.max()
     )
 
-    fig.update_traces(opacity=1.0)
+    # --- UPDATE 2: Update traces to show ACTUAL count on hover ---
+    # We pass the original grid.values as customdata
+    # We update the hovertemplate to use %{customdata} instead of %{z}
+    fig.update_traces(
+        customdata=grid.values,
+        hovertemplate="<b>Area:</b> %{y}<br><b>Time Bucket:</b> %{x}<br><b>Count:</b> %{customdata}<extra></extra>"
+    )
 
     fig.update_layout(
-        title="Heatmap — Deliveries per 20-Minute Time Bucket (Log-Scaled, Multi-Colour)",
+        title="Heatmap — Deliveries per 20-Minute Time Bucket (Log-Scaled Color, Actual Count Hover)",
         xaxis_title="Delivery Time Bucket (min)",
         yaxis_title="Area"
     )
@@ -338,10 +347,8 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
 
     st.dataframe(grid)
 
-
     st.markdown("#### Insight:")
     st.markdown(""" Based on what i see here, semi-urban areas tend to have higher average delivery times compared to urban and metropotlian areas. This could be due to a combination of factors such as traffic congestion, road infrastructure, and delivery density. Urban areas likely benefit from better logistics networks and shorter distances between delivery points, while rural areas may have less traffic and more direct routes. Semi-urban areas might face challenges from both ends, leading to increased delivery times.""")
-
 # --------------------------------------------
 # 5) Category Visualizer (Boxplot)
 # --------------------------------------------
