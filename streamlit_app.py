@@ -236,56 +236,55 @@ elif viz == "Agent Performance (Scatter Plot)":
 # 4) Area Heatmap (Avg Delivery Time per Area)
 # --------------------------------------------
 elif viz == "Area Heatmap (Avg Delivery Time)":
-    st.header("Area Heatmap — Delivery Time Buckets (20-Min Divisions)")
+    st.header("Area Heatmap — Delivery Time Grid (20-min Time Buckets)")
     st.markdown(
-        "This heatmap groups areas by **20-minute delivery time buckets** instead of raw averages."
+        "This heatmap shows how many deliveries fall inside each **20-minute time bucket** for every Area."
     )
 
-    # Compute average delivery time only
-    area_summary = (
-        work_df.groupby("Area")["Delivery_Time"]
-        .mean()
-        .reset_index()
-        .rename(columns={"Delivery_Time": "Avg_Delivery_Time"})
+    # Create 20-min bins for Delivery_Time
+    max_time = int(work_df["Delivery_Time"].max())
+    bins = list(range(0, max_time + 40, 20))
+    labels = [f"{i}-{i+20}" for i in range(0, max_time + 20, 20)]
+
+    work_df["Time_Bucket"] = pd.cut(
+        work_df["Delivery_Time"],
+        bins=bins,
+        labels=labels,
+        right=False
     )
 
-    # Create 20-minute buckets
-    area_summary["Time_Bucket"] = pd.cut(
-        area_summary["Avg_Delivery_Time"],
-        bins=range(0, int(area_summary["Avg_Delivery_Time"].max()) + 40, 20),
-        right=False,
-        labels=[f"{i}-{i+20}" for i in range(0, int(area_summary["Avg_Delivery_Time"].max()) + 20, 20)]
+    # Pivot table (Area × TimeBucket → count of deliveries)
+    grid = work_df.pivot_table(
+        index="Area",
+        columns="Time_Bucket",
+        values="Delivery_Time",
+        aggfunc="count",
+        fill_value=0
     )
 
-    # Sort by actual avg delivery time (optional)
-    area_summary = area_summary.sort_values("Avg_Delivery_Time", ascending=False)
+    # Sort areas by total delays
+    grid = grid.loc[grid.sum(axis=1).sort_values(ascending=False).index]
 
-    # Convert bucket to numeric index for heatmap color scaling
-    bucket_values = area_summary["Time_Bucket"].cat.codes.values.reshape(-1, 1)
-
+    # Heatmap using Plotly
     fig = px.imshow(
-        bucket_values,
-        labels=dict(x="", y="Area", color="Time Bucket"),
-        x=["20-min Buckets"],
-        y=area_summary["Area"],
-        title="Heatmap — Delivery Time Bucket (20-min intervals)",
+        grid.values,
+        labels=dict(x="Delivery Time (20-min Buckets)", y="Area", color="Count"),
+        x=grid.columns,
+        y=grid.index,
         aspect="auto",
-        color_continuous_scale="Plasma"
+        color_continuous_scale="Reds"
     )
 
-    # Replace the numeric colorbar with readable labels
-    fig.update_coloraxes(
-        colorbar=dict(
-            tickvals=list(range(len(area_summary["Time_Bucket"].cat.categories))),
-            ticktext=area_summary["Time_Bucket"].cat.categories.tolist(),
-            title="Time Bucket (min)"
-        )
+    fig.update_layout(
+        title="Heatmap — Deliveries per 20-Minute Time Bucket",
+        xaxis_title="Delivery Time Bucket (min)",
+        yaxis_title="Area"
     )
 
     st.plotly_chart(fig, use_container_width=True)
 
-    st.markdown("### Area Delivery Time Buckets")
-    st.dataframe(area_summary)
+    st.markdown("### Heatmap Data (Counts)")
+    st.dataframe(grid)
 
     st.markdown("#### Insight:")
     st.markdown(""" Based on what i see here, semi-urban areas tend to have higher average delivery times compared to urban and metropotlian areas. This could be due to a combination of factors such as traffic congestion, road infrastructure, and delivery density. Urban areas likely benefit from better logistics networks and shorter distances between delivery points, while rural areas may have less traffic and more direct routes. Semi-urban areas might face challenges from both ends, leading to increased delivery times.""")
