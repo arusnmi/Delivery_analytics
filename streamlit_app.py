@@ -259,10 +259,12 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
     st.header("Area Heatmap — Delivery Time Grid (20-min Time Buckets)")
     st.markdown(
         "This heatmap shows how many deliveries fall inside each **20-minute delivery time bucket** for each Area. "
-        "Colors are normalized across the entire heatmap so dark cells represent the highest delivery concentrations."
+        "Colors use a **discrete palette** (not a gradient) with global normalization."
     )
 
+    # --------------------------------------------------
     # Create 20-minute bins for Delivery_Time
+    # --------------------------------------------------
     max_time = int(work_df["Delivery_Time"].max())
     bins = list(range(0, max_time + 40, 20))
     labels = [f"{i}-{i+20}" for i in range(0, max_time + 20, 20)]
@@ -274,7 +276,9 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
         right=False
     )
 
+    # --------------------------------------------------
     # Create pivot (Area × TimeBucket → count)
+    # --------------------------------------------------
     grid = work_df.pivot_table(
         index="Area",
         columns="Time_Bucket",
@@ -283,25 +287,44 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
         fill_value=0
     )
 
-    # Sort areas by total count (optional but looks cleaner)
+    # Sort areas by total volumes for nicer visuals
     grid = grid.loc[grid.sum(axis=1).sort_values(ascending=False).index]
 
-    # GLOBAL COLOR NORMALIZATION (put it right in px.imshow)
+    # --------------------------------------------------
+    # DISCRETE COLOR PALETTE (NOT GRADIENT)
+    # --------------------------------------------------
+    colorscale = [
+        [0.0,  "#ffe5e5"],
+        [0.25, "#ffb3b3"],
+        [0.50, "#ff6666"],
+        [0.75, "#ff3333"],
+        [1.0,  "#b30000"]
+    ]
+
+    # --------------------------------------------------
+    # Heatmap
+    # --------------------------------------------------
     fig = px.imshow(
         grid.values,
-        labels=dict(x="Delivery Time (20-min Buckets)", y="Area", color="Count"),
+        labels=dict(
+            x="Delivery Time (20-min Buckets)",
+            y="Area",
+            color="Count"
+        ),
         x=grid.columns,
         y=grid.index,
         aspect="auto",
-        color_continuous_scale="Reds",
 
-        # 🔥 THIS IS THE NORMALIZATION
+        # use discrete color palette
+        color_continuous_scale=colorscale,
+
+        # Normalize the full heatmap scale
         zmin=grid.values.min(),
         zmax=grid.values.max()
     )
 
     fig.update_layout(
-        title="Heatmap — Deliveries per 20-Minute Time Bucket (Normalized Colors)",
+        title="Heatmap — Deliveries per 20-Minute Time Bucket (Discrete Colors)",
         xaxis_title="Delivery Time Bucket (min)",
         yaxis_title="Area"
     )
@@ -310,9 +333,6 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
 
     st.markdown("### Heatmap Data (Counts)")
     st.dataframe(grid)
-
-    st.markdown("#### Insight:")
-    st.markdown(""" Based on what i see here, semi-urban areas tend to have higher average delivery times compared to urban and metropotlian areas. This could be due to a combination of factors such as traffic congestion, road infrastructure, and delivery density. Urban areas likely benefit from better logistics networks and shorter distances between delivery points, while rural areas may have less traffic and more direct routes. Semi-urban areas might face challenges from both ends, leading to increased delivery times.""")
 
 
 # --------------------------------------------
