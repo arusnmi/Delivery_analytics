@@ -322,7 +322,7 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
     # --------------------------------------------------
     # FULL OPACITY — MAKE HEATMAP MORE READABLE
     # --------------------------------------------------
-    fig.update_traces(opacity=1.0)
+    fig.update_traces(opacity=10.0)
 
     fig.update_layout(
         title="Heatmap — Deliveries per 20-Minute Time Bucket (Discrete Colors)",
