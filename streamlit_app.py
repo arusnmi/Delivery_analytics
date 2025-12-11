@@ -236,11 +236,12 @@ elif viz == "Agent Performance (Scatter Plot)":
 # 4) Area Heatmap (Avg Delivery Time per Area)
 # --------------------------------------------
 elif viz == "Area Heatmap (Avg Delivery Time)":
-    st.header("Area Heatmap — Average Delivery Time by Area")
+    st.header("Area Heatmap — Delivery Time Buckets (20-Min Divisions)")
     st.markdown(
-        "This heatmap shows average delivery times per Area. Areas are sorted by average delay so the vertical heat gradient highlights slow regions."
+        "This heatmap groups areas by **20-minute delivery time buckets** instead of raw averages."
     )
 
+    # Compute average delivery time only
     area_summary = (
         work_df.groupby("Area")["Delivery_Time"]
         .mean()
@@ -248,25 +249,44 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
         .rename(columns={"Delivery_Time": "Avg_Delivery_Time"})
     )
 
-    # Sort areas by avg time
+    # Create 20-minute buckets
+    area_summary["Time_Bucket"] = pd.cut(
+        area_summary["Avg_Delivery_Time"],
+        bins=range(0, int(area_summary["Avg_Delivery_Time"].max()) + 40, 20),
+        right=False,
+        labels=[f"{i}-{i+20}" for i in range(0, int(area_summary["Avg_Delivery_Time"].max()) + 20, 20)]
+    )
+
+    # Sort by actual avg delivery time (optional)
     area_summary = area_summary.sort_values("Avg_Delivery_Time", ascending=False)
-    # Create a 2D matrix with one column to visualize as heatmap (Area × 1)
-    heat_vals = area_summary["Avg_Delivery_Time"].values.reshape(-1, 1)
+
+    # Convert bucket to numeric index for heatmap color scaling
+    bucket_values = area_summary["Time_Bucket"].cat.codes.values.reshape(-1, 1)
 
     fig = px.imshow(
-        heat_vals,
-        labels=dict(x="", y="Area", color="Avg Delivery Time (min)"),
-        x=["Avg Delivery Time"],
+        bucket_values,
+        labels=dict(x="", y="Area", color="Time Bucket"),
+        x=["20-min Buckets"],
         y=area_summary["Area"],
-        title="Heatmap — Average Delivery Time by Area",
+        title="Heatmap — Delivery Time Bucket (20-min intervals)",
         aspect="auto",
+        color_continuous_scale="Plasma"
     )
-    # Enhance colorbar label
-    fig.update_coloraxes(colorbar_title="Avg Time (min)")
+
+    # Replace the numeric colorbar with readable labels
+    fig.update_coloraxes(
+        colorbar=dict(
+            tickvals=list(range(len(area_summary["Time_Bucket"].cat.categories))),
+            ticktext=area_summary["Time_Bucket"].cat.categories.tolist(),
+            title="Time Bucket (min)"
+        )
+    )
+
     st.plotly_chart(fig, use_container_width=True)
 
-    st.markdown("### Area averages")
-    st.dataframe(area_summary.style.format({"Avg_Delivery_Time":"{:.2f} min"}))
+    st.markdown("### Area Delivery Time Buckets")
+    st.dataframe(area_summary)
+
     st.markdown("#### Insight:")
     st.markdown(""" Based on what i see here, semi-urban areas tend to have higher average delivery times compared to urban and metropotlian areas. This could be due to a combination of factors such as traffic congestion, road infrastructure, and delivery density. Urban areas likely benefit from better logistics networks and shorter distances between delivery points, while rural areas may have less traffic and more direct routes. Semi-urban areas might face challenges from both ends, leading to increased delivery times.""")
 
