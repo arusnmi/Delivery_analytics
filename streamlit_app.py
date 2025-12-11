@@ -268,7 +268,7 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
     bins = list(range(0, max_time + 40, 20))
     labels = [f"{i}-{i+20}" for i in range(0, max_time + 20, 20)]
 
-    # Remove 280–300 bucket
+    # Remove 280–300 bucket label
     labels = [lab for lab in labels if lab != "280-300"]
 
     work_df["Time_Bucket"] = pd.cut(
@@ -289,7 +289,7 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
         fill_value=0
     )
 
-    # Drop deleted column if exists
+    # Drop unwanted column
     if "280-300" in grid.columns:
         grid = grid.drop(columns=["280-300"])
 
@@ -297,25 +297,25 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
     grid = grid.loc[grid.sum(axis=1).sort_values(ascending=False).index]
 
     # --------------------------------------------------
-    # Log-scale for colours (better visualization)
+    # Value Dispersal (log)
     # --------------------------------------------------
     heat_values = np.log1p(grid.values)
 
     # --------------------------------------------------
-    # Multi-colour scale (7 colors)
+    # Multi-colour 7-step palette
     # --------------------------------------------------
     colorscale = [
-        [0.0,  "#0000FF"],
-        [0.16, "#00BFFF"],
-        [0.33, "#00FF7F"],
-        [0.50, "#FFFF00"],
-        [0.66, "#FFA500"],
-        [0.83, "#FF4500"],
-        [1.0,  "#8B0000"]
+        [0.0,  "#0000FF"],  # Blue
+        [0.16, "#00BFFF"],  # Deep sky blue
+        [0.33, "#00FF7F"],  # Spring green
+        [0.50, "#FFFF00"],  # Yellow
+        [0.66, "#FFA500"],  # Orange
+        [0.83, "#FF4500"],  # Orange red
+        [1.0,  "#8B0000"]   # Dark red
     ]
 
     # --------------------------------------------------
-    # Heatmap — with hover showing ACTUAL COUNT
+    # Create heatmap (NO custom_data HERE)
     # --------------------------------------------------
     fig = px.imshow(
         heat_values,
@@ -329,12 +329,13 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
         aspect="auto",
         color_continuous_scale=colorscale,
         zmin=heat_values.min(),
-        zmax=heat_values.max(),
-        custom_data=grid.values  # <<–– REAL COUNTS HERE
+        zmax=heat_values.max()
     )
 
-    # FULL OPACITY
-    fig.update_traces(opacity=1.0)
+    # --------------------------------------------------
+    # Add REAL COUNTS to hover
+    # --------------------------------------------------
+    fig.update_traces(customdata=grid.values)  # ← works in update_traces()
 
     # --------------------------------------------------
     # Custom hovertemplate
@@ -345,6 +346,9 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
         "<b>Time Bucket:</b> %{x}<br>" +
         "<b>Actual Count:</b> %{customdata}<extra></extra>"
     )
+
+    # Full opacity
+    fig.update_traces(opacity=1.0)
 
     fig.update_layout(
         title="Heatmap — Deliveries per 20-Minute Time Bucket (Hover Shows Actual Counts)",
