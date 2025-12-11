@@ -289,33 +289,33 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
         fill_value=0
     )
 
-    # Drop unwanted column
+    # Drop unwanted bucket
     if "280-300" in grid.columns:
         grid = grid.drop(columns=["280-300"])
 
-    # Sort areas
+    # Sort rows
     grid = grid.loc[grid.sum(axis=1).sort_values(ascending=False).index]
 
     # --------------------------------------------------
-    # Value Dispersal (log)
+    # Log scale for visibility
     # --------------------------------------------------
     heat_values = np.log1p(grid.values)
 
     # --------------------------------------------------
-    # Multi-colour 7-step palette
+    # Multi-colour gradient
     # --------------------------------------------------
     colorscale = [
-        [0.0,  "#0000FF"],  # Blue
-        [0.16, "#00BFFF"],  # Deep sky blue
-        [0.33, "#00FF7F"],  # Spring green
-        [0.50, "#FFFF00"],  # Yellow
-        [0.66, "#FFA500"],  # Orange
-        [0.83, "#FF4500"],  # Orange red
-        [1.0,  "#8B0000"]   # Dark red
+        [0.0,  "#0000FF"],
+        [0.16, "#00BFFF"],
+        [0.33, "#00FF7F"],
+        [0.50, "#FFFF00"],
+        [0.66, "#FFA500"],
+        [0.83, "#FF4500"],
+        [1.0,  "#8B0000"]
     ]
 
     # --------------------------------------------------
-    # Create heatmap (NO custom_data HERE)
+    # Create Heatmap
     # --------------------------------------------------
     fig = px.imshow(
         heat_values,
@@ -333,21 +333,21 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
     )
 
     # --------------------------------------------------
-    # Add REAL COUNTS to hover
+    # FIX: Add actual counts to customdata (MUST BE A LIST)
     # --------------------------------------------------
-    fig.update_traces(customdata=grid.values)  # ← works in update_traces()
+    fig.update_traces(customdata=grid.values.tolist())
 
     # --------------------------------------------------
-    # Custom hovertemplate
+    # FIX: Hover now shows REAL COUNT (not log values)
     # --------------------------------------------------
     fig.update_traces(
         hovertemplate=
-        "<b>Area:</b> %{y}<br>" +
-        "<b>Time Bucket:</b> %{x}<br>" +
-        "<b>Actual Count:</b> %{customdata}<extra></extra>"
+            "<b>Area:</b> %{y}<br>" +
+            "<b>Time Bucket:</b> %{x}<br>" +
+            "<b>Actual Count:</b> %{customdata}<extra></extra>"
     )
 
-    # Full opacity
+    # Full visibility
     fig.update_traces(opacity=1.0)
 
     fig.update_layout(
@@ -359,6 +359,7 @@ elif viz == "Area Heatmap (Avg Delivery Time)":
     st.plotly_chart(fig, use_container_width=True)
 
     st.dataframe(grid)
+
 
 
     st.markdown("#### Insight:")
