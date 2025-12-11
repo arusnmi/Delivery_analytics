@@ -17,7 +17,7 @@ st.markdown(
 # Load data (cached)
 # --------------------------------------------
 @st.cache_data
-def load_data(path="no_na_Last_mile_Delivery_Data.csv"):
+def load_data(path="delivery_with_delay_features.csv"):
     df = pd.read_csv(path)
     return df
 
